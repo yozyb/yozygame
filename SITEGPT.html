@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="pt" id="lang-pt">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>BOBI Games</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body onload="startTracking(); loadLanguage('pt');">
+  <header class="vibrant-header">
+    <div class="language-selector">
+      <select id="languageSelect" onchange="changeLanguage(this.value)">
+        <option value="pt">🇧🇷 Português</option>
+        <option value="en">🇬🇧 English</option>
+        <option value="fr">🇫🇷 Français</option>
+        <option value="ja">🇯🇵 日本語</option>
+      </select>
+    </div>
+    <h1 class="flaming-text">🎮 BOBI Games</h1>
+    <p class="subtitle">Os melhores jogos online em um só lugar!</p>
+  </header>
+  
+  <nav class="vibrant-nav">
+    <a href="#posts" class="nav-link">📢 Novidades</a>
+    <a href="#jogos" class="nav-link">🎮 Todos os Jogos</a>
+    <a href="#earn-money" class="nav-link">💰 Earn Money</a>
+    <a href="#chatotaku" class="nav-link">🐱 ChaTOTaku</a>
+    <a href="#sobre" class="nav-link">ℹ️ Sobre Nós</a>
+    <a href="#support" class="nav-link">🆘 Support</a>
+  </nav>
+
+  <main>
+    <!-- Seção Novidades (48h) -->
+    <section id="posts" class="category-section">
+      <h2 class="section-title flaming-text">📢 Últimas Publicações</h2>
+      <div id="postagens" class="posts-container"></div>
+    </section>
+    
+    <!-- Seção Todos os Jogos -->
+    <section id="jogos" class="category-section hidden">
+      <h2 class="section-title flaming-text">🎮 Nossos Jogos</h2>
+      <div class="category-filters">
+        <button class="filter-btn active" data-category="all">Todos</button>
+        <button class="filter-btn" data-category="earn-money">💰 Earn Money</button>
+        <button class="filter-btn" data-category="chatotaku">🐱 ChaTOTaku</button>
+        <button class="filter-btn" data-category="action">🎯 Ação</button>
+        <button class="filter-btn" data-category="adventure">🧭 Aventura</button>
+      </div>
+      <div id="jogos-container" class="jogos-grid"></div>
+    </section>
+    
+    <!-- Seção Earn Money -->
+    <section id="earn-money" class="category-section hidden">
+      <h2 class="section-title flaming-text">💰 Earn Money</h2>
+      <div class="category-content">
+        <p>Descubra jogos que permitem ganhar dinheiro real enquanto se diverte!</p>
+        <p>Nossa seleção inclui jogos de habilidade, torneios e oportunidades únicas.</p>
+        <div id="earn-money-games" class="jogos-grid"></div>
+      </div>
+    </section>
+    
+    <!-- Seção ChaTOTaku -->
+    <section id="chatotaku" class="category-section hidden">
+      <h2 class="section-title flaming-text">🐱 ChaTOTaku</h2>
+      <div class="category-content">
+        <p>Bem-vindo ao mundo anime! Aqui você encontra:</p>
+        <ul>
+          <li>Jogos de anime exclusivos</li>
+          <li>Notícias do mundo otaku</li>
+          <li>Comunidade de fãs</li>
+        </ul>
+        <div id="chatotaku-games" class="jogos-grid"></div>
+      </div>
+    </section>
+    
+    <!-- Seção Sobre Nós -->
+    <section id="sobre" class="category-section hidden">
+      <h2 class="section-title flaming-text">ℹ️ Sobre Nós</h2>
+      <div id="sobre-content" class="category-content">
+        <!-- Conteúdo será carregado do admin -->
+      </div>
+    </section>
+    
+    <!-- Seção Support -->
+    <section id="support" class="category-section hidden">
+      <h2 class="section-title flaming-text">🆘 Support</h2>
+      <form id="support-form" class="support-form">
+        <div class="form-group">
+          <label for="support-name">Seu Nome*</label>
+          <input type="text" id="support-name" required>
+        </div>
+        <div class="form-group">
+          <label for="support-subject">Assunto*</label>
+          <input type="text" id="support-subject" required>
+        </div>
+        <div class="form-group">
+          <label for="support-message">Mensagem*</label>
+          <textarea id="support-message" required></textarea>
+        </div>
+        <button type="submit">Enviar Mensagem</button>
+      </form>
+    </section>
+  </main>
+
+  <footer class="vibrant-footer">
+    <p>&copy; 2025 BOBI Games - Todos os direitos reservados</p>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>

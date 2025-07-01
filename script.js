@@ -1,628 +1,580 @@
-// ========== VARIÁVEIS GLOBAIS ==========
-const startScreen = document.getElementById('start-screen');
-const levelSelectScreen = document.getElementById('level-select-screen');
-const levelsContainer = document.getElementById('levels-container');
-const backToMenuBtn = document.getElementById('back-to-menu');
-const gameContainer = document.getElementById('game');
-const startGameBtn = document.getElementById('start-game-btn');
-const skinShopBtn = document.getElementById('skin-shop-btn');
-const settingsBtn = document.getElementById('settings-btn');
-const settingsMenu = document.getElementById('settings-menu');
-const saveSettingsBtn = document.getElementById('save-settings');
-const skinsBackground = document.getElementById('skins-background');
-const bobi = document.getElementById('bobi');
-const timerDisplay = document.getElementById('timer');
-const scoreDisplay = document.getElementById('score');
-const highScoreDisplay = document.getElementById('high-score');
-const gameOverDisplay = document.getElementById('game-over');
-const victoryDisplay = document.getElementById('victory');
-const toggleSkinShopBtn = document.getElementById('toggle-skin-shop');
-const skinShop = document.getElementById('skin-shop');
-const skinOptions = document.querySelectorAll('.skin-option');
-const pauseBtn = document.getElementById('pause-btn');
-const pauseMenu = document.getElementById('pause-menu');
-const resumeBtn = document.getElementById('resume-btn');
-const quitBtn = document.getElementById('quit-btn');
-const leftBtn = document.getElementById('left-btn');
-const rightBtn = document.getElementById('right-btn');
-const jumpBtn = document.getElementById('jump-btn');
-const backgroundMusic = document.getElementById('backgroundMusic');
-backgroundMusic.volume = 0.4;
-
-// Configurações do jogo
-let gameStarted = false;
-let isPaused = false;
-let timer = 0;
-let score = 0;
-let highScore = localStorage.getItem('highScore') || 0;
-let obstacles = [];
-let coins = [];
-let clouds = [];
-let gravity = 0.8;
-let isJumping = false;
-let velocityY = 0;
-let groundHeight = 50;
-let bobiBottom = groundHeight;
-let bobiHeight = 50;
-let baseSpeed = 5;
-let currentSpeed = baseSpeed;
-let language = 'pt';
-let soundEffectsEnabled = true;
-let selectedLevel = 1;
-let levelComplete = false;
-let unlockedLevels = localStorage.getItem('unlockedLevels') ? parseInt(localStorage.getItem('unlockedLevels')) : 1;
-let obstacleInterval, coinInterval, cloudInterval;
-let levelTimeLimit = 60;
-let bobiLeft = 50;
-let moveLeft = false;
-let moveRight = false;
-
-// Mapeamento de skins e cores
-const skinSkyColors = {
-    "skin-lloyd": "#87CEFA",
-    "skin-kai": "#FF6347",
-    "skin-jay": "#1E90FF",
-    "skin-cole": "#696969",
-    "skin-zane": "#E0FFFF",
-    "skin-steve": "#32CD32",
-    "skin-alex": "#FF69B4",
-    "skin-batman": "#00008B",
+// script.js
+let posts = JSON.parse(localStorage.getItem('posts')) || [];
+let games = JSON.parse(localStorage.getItem('games')) || [];
+let aboutContent = JSON.parse(localStorage.getItem('aboutContent')) || {
+  pt: "",
+  en: "",
+  fr: "",
+  ja: ""
 };
+let supportMessages = JSON.parse(localStorage.getItem('supportMessages')) || [];
+let userLikes = JSON.parse(localStorage.getItem('userLikes')) || {};
+let currentLanguage = 'pt';
 
-const skins = [
-    { class: "skin-lloyd", color: "#32CD32", detail: "🍀" },
-    { class: "skin-kai", color: "#FF4500", detail: "🔥" },
-    { class: "skin-jay", color: "#1E90FF", detail: "⚡" },
-    { class: "skin-cole", color: "#000000", detail: "⛰️" },
-    { class: "skin-zane", color: "#FFFFFF", detail: "❄️" },
-    { class: "skin-steve", color: "#4CAF50", detail: "⛏️" },
-];
+// Carrega conteúdo ao iniciar
+document.addEventListener('DOMContentLoaded', () => {
+  carregarPosts();
+  carregarJogos();
+  carregarSobre();
+  setupNavigation();
+  setupSupportForm();
+  checkNewPosts();
+  loadLanguage();
+  setupCategoryFilters();
+});
 
-const translations = {
+function setupNavigation() {
+  document.querySelectorAll('.nav-link').forEach(link => {
+    link.addEventListener('click', function(e) {
+      e.preventDefault();
+      const target = this.getAttribute('href');
+      
+      // Esconde todas as seções
+      document.querySelectorAll('.category-section').forEach(section => {
+        section.classList.add('hidden');
+      });
+      
+      // Mostra a seção alvo
+      document.querySelector(target).classList.remove('hidden');
+      
+      // Atualiza jogos por categoria se necessário
+      if (target === '#earn-money') {
+        carregarJogosPorCategoria('earn-money', 'earn-money-games');
+      } else if (target === '#chatotaku') {
+        carregarJogosPorCategoria('chatotaku', 'chatotaku-games');
+      }
+      
+      // Rola suavemente para a seção
+      document.querySelector(target).scrollIntoView({behavior: 'smooth'});
+    });
+  });
+}
+
+function carregarPosts() {
+  const container = document.getElementById('postagens');
+  if (!container) return;
+  
+  container.innerHTML = '';
+  
+  const now = new Date();
+  const recentPosts = posts.filter(post => {
+    const postDate = new Date(post.data);
+    const diffHours = (now - postDate) / (1000 * 60 * 60);
+    return diffHours <= 48;
+  });
+
+  if (recentPosts.length === 0) {
+    container.innerHTML = '<p class="no-posts">Nenhuma novidade recente. Volte em breve!</p>';
+    return;
+  }
+
+  recentPosts.slice().reverse().forEach(post => {
+    const postElement = document.createElement('div');
+    postElement.className = 'post';
+    
+    const userId = getUserId();
+    const isLiked = userLikes[`post_${post.id}_${userId}`] || false;
+    
+    postElement.innerHTML = `
+      <h3>${post.titulo}</h3>
+      ${post.imagem ? `<a href="${post.link}" target="_blank"><img src="${post.imagem}" alt="${post.titulo}" onerror="this.style.display='none'"></a>` : ''}
+      ${post.video ? `<div class="video-container">${post.video}</div>` : ''}
+      ${post.descricao ? `<p>${post.descricao}</p>` : ''}
+      <div class="post-interactions">
+        <button class="like-btn ${isLiked ? 'liked' : ''}" data-post-id="${post.id}">
+          <i class="${isLiked ? 'fas' : 'far'} fa-heart"></i> <span>${post.likes || 0}</span>
+        </button>
+        <button class="comment-btn" data-post-id="${post.id}">
+          <i class="far fa-comment"></i> ${post.comments ? post.comments.length : 0}
+        </button>
+      </div>
+      <div class="comments-section" id="comments-${post.id}" style="display:none;">
+        <div class="comments-list"></div>
+        <textarea class="comment-input" placeholder="Adicione um comentário..."></textarea>
+        <button class="post-comment-btn" data-post-id="${post.id}">Publicar</button>
+      </div>
+      <small>Publicado em: ${new Date(post.data).toLocaleString()}</small>
+    `;
+    
+    container.appendChild(postElement);
+  });
+
+  setupInteractionButtons();
+}
+
+function carregarJogos() {
+  const container = document.getElementById('jogos-container');
+  if (!container) return;
+  
+  container.innerHTML = '';
+  
+  if (games.length === 0) {
+    container.innerHTML = '<p class="no-posts">Nenhum jogo disponível ainda.</p>';
+    return;
+  }
+
+  games.forEach(game => {
+    const gameElement = document.createElement('div');
+    gameElement.className = 'game-card';
+    gameElement.setAttribute('data-category', game.categoria || 'all');
+    
+    const userId = getUserId();
+    const isLiked = userLikes[`game_${game.id}_${userId}`] || false;
+    
+    gameElement.innerHTML = `
+      <h3>${game.titulo}</h3>
+      <div class="game-image-container">
+        <img src="${game.imagem}" alt="${game.titulo}" onerror="this.style.display='none'">
+        <a href="${game.link}" target="_blank" class="play-overlay-btn">JOGAR AGORA <i class="fas fa-play"></i></a>
+      </div>
+      <div class="game-description">${game.descricao || 'Descrição não disponível'}</div>
+      <div class="game-interactions">
+        <button class="like-btn ${isLiked ? 'liked' : ''}" data-game-id="${game.id}">
+          <i class="${isLiked ? 'fas' : 'far'} fa-heart"></i> <span>${game.likes || 0}</span>
+        </button>
+        <a href="${game.link}" target="_blank" class="btn-jogar">JOGAR AGORA</a>
+      </div>
+    `;
+    
+    container.appendChild(gameElement);
+  });
+
+  setupInteractionButtons();
+}
+
+function carregarJogosPorCategoria(categoria, containerId) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  
+  container.innerHTML = '';
+  
+  const jogosCategoria = games.filter(game => game.categoria === categoria);
+  
+  if (jogosCategoria.length === 0) {
+    container.innerHTML = '<p class="no-posts">Nenhum jogo nesta categoria ainda.</p>';
+    return;
+  }
+
+  jogosCategoria.forEach(game => {
+    const gameElement = document.createElement('div');
+    gameElement.className = 'game-card';
+    
+    const userId = getUserId();
+    const isLiked = userLikes[`game_${game.id}_${userId}`] || false;
+    
+    gameElement.innerHTML = `
+      <h3>${game.titulo}</h3>
+      <div class="game-image-container">
+        <img src="${game.imagem}" alt="${game.titulo}" onerror="this.style.display='none'">
+        <a href="${game.link}" target="_blank" class="play-overlay-btn">JOGAR AGORA <i class="fas fa-play"></i></a>
+      </div>
+      <div class="game-description">${game.descricao || 'Descrição não disponível'}</div>
+      <div class="game-interactions">
+        <button class="like-btn ${isLiked ? 'liked' : ''}" data-game-id="${game.id}">
+          <i class="${isLiked ? 'fas' : 'far'} fa-heart"></i> <span>${game.likes || 0}</span>
+        </button>
+        <a href="${game.link}" target="_blank" class="btn-jogar">JOGAR AGORA</a>
+      </div>
+    `;
+    
+    container.appendChild(gameElement);
+  });
+
+  setupInteractionButtons();
+}
+
+function setupCategoryFilters() {
+  const filterButtons = document.querySelectorAll('.filter-btn');
+  if (!filterButtons) return;
+  
+  filterButtons.forEach(button => {
+    button.addEventListener('click', function() {
+      // Remove active class from all buttons
+      filterButtons.forEach(btn => btn.classList.remove('active'));
+      // Add active class to clicked button
+      this.classList.add('active');
+      
+      const category = this.getAttribute('data-category');
+      filterGamesByCategory(category);
+    });
+  });
+}
+
+function filterGamesByCategory(category) {
+  const gameCards = document.querySelectorAll('.game-card');
+  
+  gameCards.forEach(card => {
+    if (category === 'all' || card.getAttribute('data-category') === category) {
+      card.style.display = 'block';
+    } else {
+      card.style.display = 'none';
+    }
+  });
+}
+
+function carregarSobre() {
+  const container = document.getElementById('sobre-content');
+  if (!container) return;
+  
+  container.innerHTML = aboutContent[currentLanguage] || aboutContent.pt || "Conteúdo sobre a empresa será adicionado em breve.";
+}
+
+function setupSupportForm() {
+  const form = document.getElementById('support-form');
+  if (!form) return;
+  
+  form.addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const name = document.getElementById('support-name').value.trim();
+    const subject = document.getElementById('support-subject').value.trim();
+    const message = document.getElementById('support-message').value.trim();
+    
+    if (!name || !subject || !message) {
+      alert('Por favor, preencha todos os campos!');
+      return;
+    }
+    
+    const newMessage = {
+      id: Date.now(),
+      name,
+      subject,
+      message,
+      date: new Date().toISOString(),
+      read: false
+    };
+    
+    supportMessages.push(newMessage);
+    localStorage.setItem('supportMessages', JSON.stringify(supportMessages));
+    
+    form.reset();
+    alert('Mensagem enviada com sucesso! Obrigado pelo seu feedback.');
+  });
+}
+
+function setupInteractionButtons() {
+  // Likes
+  document.querySelectorAll('.like-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+      const postId = this.getAttribute('data-post-id');
+      const gameId = this.getAttribute('data-game-id');
+      const userId = getUserId();
+      
+      if (postId) {
+        const post = posts.find(p => p.id === postId);
+        if (post) {
+          const userLikeKey = `post_${postId}_${userId}`;
+          const hasLiked = userLikes[userLikeKey];
+          
+          if (hasLiked) {
+            post.likes = Math.max(0, (post.likes || 0) - 1);
+            delete userLikes[userLikeKey];
+            this.classList.remove('liked');
+            this.querySelector('i').className = 'far fa-heart';
+          } else {
+            post.likes = (post.likes || 0) + 1;
+            userLikes[userLikeKey] = true;
+            this.classList.add('liked');
+            this.querySelector('i').className = 'fas fa-heart';
+          }
+          
+          localStorage.setItem('posts', JSON.stringify(posts));
+          localStorage.setItem('userLikes', JSON.stringify(userLikes));
+          this.querySelector('span').textContent = post.likes;
+        }
+      } else if (gameId) {
+        const game = games.find(g => g.id === gameId);
+        if (game) {
+          const userLikeKey = `game_${gameId}_${userId}`;
+          const hasLiked = userLikes[userLikeKey];
+          
+          if (hasLiked) {
+            game.likes = Math.max(0, (game.likes || 0) - 1);
+            delete userLikes[userLikeKey];
+            this.classList.remove('liked');
+            this.querySelector('i').className = 'far fa-heart';
+          } else {
+            game.likes = (game.likes || 0) + 1;
+            userLikes[userLikeKey] = true;
+            this.classList.add('liked');
+            this.querySelector('i').className = 'fas fa-heart';
+          }
+          
+          localStorage.setItem('games', JSON.stringify(games));
+          localStorage.setItem('userLikes', JSON.stringify(userLikes));
+          this.querySelector('span').textContent = game.likes;
+        }
+      }
+    });
+  });
+  
+  // Comentários
+  document.querySelectorAll('.comment-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+      const postId = this.getAttribute('data-post-id');
+      const commentsSection = document.getElementById(`comments-${postId}`);
+      
+      if (commentsSection.style.display === 'none') {
+        commentsSection.style.display = 'block';
+        loadComments(postId);
+      } else {
+        commentsSection.style.display = 'none';
+      }
+    });
+  });
+  
+  // Publicar comentários
+  document.querySelectorAll('.post-comment-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+      const postId = this.getAttribute('data-post-id');
+      const commentInput = this.previousElementSibling;
+      const commentText = commentInput.value.trim();
+      
+      if (!commentText) return;
+      
+      const userName = prompt("Por favor, digite seu nome para o comentário:", "Anônimo") || "Anônimo";
+      const userId = getUserId();
+      
+      const post = posts.find(p => p.id === postId);
+      if (post) {
+        if (!post.comments) post.comments = [];
+        
+        post.comments.push({
+          id: Date.now(),
+          text: commentText,
+          date: new Date().toISOString(),
+          author: userName,
+          userId: userId
+        });
+        
+        localStorage.setItem('posts', JSON.stringify(posts));
+        commentInput.value = '';
+        loadComments(postId);
+        
+        // Atualiza contador de comentários
+        const commentBtn = document.querySelector(`.comment-btn[data-post-id="${postId}"]`);
+        if (commentBtn) {
+          commentBtn.innerHTML = `<i class="far fa-comment"></i> ${post.comments.length}`;
+        }
+        
+        // Atualiza no admin
+        window.dispatchEvent(new Event('storage'));
+      }
+    });
+  });
+}
+
+function loadComments(postId) {
+  const post = posts.find(p => p.id === postId);
+  if (!post || !post.comments) return;
+  
+  const commentsList = document.querySelector(`#comments-${postId} .comments-list`);
+  if (!commentsList) return;
+  
+  commentsList.innerHTML = '';
+  
+  post.comments.forEach(comment => {
+    const commentElement = document.createElement('div');
+    commentElement.className = 'comment';
+    commentElement.innerHTML = `
+      <strong>${comment.author}</strong>
+      <p>${comment.text}</p>
+      <small>${new Date(comment.date).toLocaleString()}</small>
+    `;
+    commentsList.appendChild(commentElement);
+  });
+}
+
+function checkNewPosts() {
+  const now = new Date();
+  posts.forEach(post => {
+    const postDate = new Date(post.data);
+    const diffHours = (now - postDate) / (1000 * 60 * 60);
+    
+    // Se post tem mais de 48h e ainda não foi movido para jogos
+    if (diffHours > 48 && !games.some(g => g.id === post.id)) {
+      games.push({
+        id: post.id,
+        titulo: post.titulo,
+        imagem: post.imagem,
+        link: post.link,
+        descricao: post.descricao,
+        categoria: 'all',
+        likes: post.likes || 0,
+        data: post.data
+      });
+    }
+  });
+  
+  localStorage.setItem('games', JSON.stringify(games));
+}
+
+// Sistema de idiomas
+function changeLanguage(lang) {
+  currentLanguage = lang;
+  document.documentElement.id = `lang-${lang}`;
+  localStorage.setItem('bobGamesLanguage', lang);
+  
+  // Atualiza todo o conteúdo
+  carregarPosts();
+  carregarJogos();
+  carregarSobre();
+  updateUITexts(lang);
+}
+
+function loadLanguage() {
+  const savedLang = localStorage.getItem('bobGamesLanguage') || 'pt';
+  document.getElementById('languageSelect').value = savedLang;
+  changeLanguage(savedLang);
+}
+
+function updateUITexts(lang) {
+  const translations = {
     pt: {
-        play: "JOGAR",
-        skinShop: "LOJA DE SKINS",
-        settings: "DEFINIÇÕES",
-        difficulty: "Dificuldade",
-        easy: "Fácil (Velocidade lenta)",
-        medium: "Médio (Velocidade normal)",
-        hard: "Difícil (Velocidade rápida)",
-        language: "Idioma",
-        save: "SALVAR",
-        chooseSkin: "ESCOLHA SUA SKIN",
-        highScore: "Recorde: ",
-        gameOver: "GAME OVER",
-        victory: "VENCESTE!",
-        createdBy: "Criado por YOZY",
-        chooseLevel: "ESCOLHA O NÍVEL",
-        back: "VOLTAR",
-        pause: "PAUSAR",
-        resume: "CONTINUAR",
-        quit: "SAIR",
-        paused: "JOGO PAUSED"
+      title: "Bob Games",
+      subtitle: "Os melhores jogos online em um só lugar!",
+      news: "📢 Novidades",
+      games: "🎮 Todos os Jogos",
+      earnMoney: "💰 Earn Money",
+      chatotaku: "🐱 ChaTOTaku",
+      about: "ℹ️ Sobre Nós",
+      support: "🆘 Support",
+      noPosts: "Nenhuma novidade recente. Volte em breve!",
+      noGames: "Nenhum jogo disponível ainda.",
+      noCategoryGames: "Nenhum jogo nesta categoria ainda.",
+      playNow: "JOGAR AGORA",
+      commentPlaceholder: "Adicione um comentário...",
+      publishComment: "Publicar",
+      footer: "© 2025 Bob Games - Todos os direitos reservados",
+      namePrompt: "Por favor, digite seu nome para o comentário:"
     },
     en: {
-        play: "PLAY",
-        skinShop: "SKIN SHOP",
-        settings: "SETTINGS",
-        difficulty: "Difficulty",
-        easy: "Easy (Slow speed)",
-        medium: "Medium (Normal speed)",
-        hard: "Hard (Fast speed)",
-        language: "Language",
-        save: "SAVE",
-        chooseSkin: "CHOOSE YOUR SKIN",
-        highScore: "High Score: ",
-        gameOver: "GAME OVER",
-        victory: "YOU WIN!",
-        chooseLevel: "CHOOSE LEVEL",
-        back: "BACK",
-        pause: "PAUSE",
-        resume: "RESUME",
-        quit: "QUIT",
-        paused: "GAME PAUSED"
+      title: "Bob Games",
+      subtitle: "The best online games in one place!",
+      news: "📢 News",
+      games: "🎮 All Games",
+      earnMoney: "💰 Earn Money",
+      chatotaku: "🐱 ChaTOTaku",
+      about: "ℹ️ About Us",
+      support: "🆘 Support",
+      noPosts: "No recent news. Come back soon!",
+      noGames: "No games available yet.",
+      noCategoryGames: "No games in this category yet.",
+      playNow: "PLAY NOW",
+      commentPlaceholder: "Add a comment...",
+      publishComment: "Publish",
+      footer: "© 2025 Bob Games - All rights reserved",
+      namePrompt: "Please enter your name for the comment:"
+    },
+    fr: {
+      title: "Bob Games",
+      subtitle: "Les meilleurs jeux en ligne en un seul endroit!",
+      news: "📢 Nouvelles",
+      games: "🎮 Tous les jeux",
+      earnMoney: "💰 Gagner de l'argent",
+      chatotaku: "🐱 ChaTOTaku",
+      about: "ℹ️ À propos",
+      support: "🆘 Support",
+      noPosts: "Pas de nouvelles récentes. Revenez bientôt!",
+      noGames: "Aucun jeu disponible pour le moment.",
+      noCategoryGames: "Aucun jeu dans cette catégorie pour le moment.",
+      playNow: "JOUER MAINTENANT",
+      commentPlaceholder: "Ajouter un commentaire...",
+      publishComment: "Publier",
+      footer: "© 2025 Bob Games - Tous droits réservés",
+      namePrompt: "Veuillez entrer votre nom pour le commentaire:"
+    },
+    ja: {
+      title: "ボブゲームズ",
+      subtitle: "最高のオンラインゲームがここに！",
+      news: "📢 ニュース",
+      games: "🎮 すべてのゲーム",
+      earnMoney: "💰 お金を稼ぐ",
+      chatotaku: "🐱 チャトタク",
+      about: "ℹ️ 会社概要",
+      support: "🆘 サポート",
+      noPosts: "最近のニュースはありません。また後でチェックしてください！",
+      noGames: "まだ利用可能なゲームはありません。",
+      noCategoryGames: "このカテゴリにはまだゲームがありません。",
+      playNow: "今すぐプレイ",
+      commentPlaceholder: "コメントを追加...",
+      publishComment: "公開",
+      footer: "© 2025 ボブゲームズ - 全著作権所有",
+      namePrompt: "コメント用にあなたの名前を入力してください:"
     }
-};
-
-// ========== INICIALIZAÇÃO ==========
-function initGame() {
-    createSkinBackground();
-    loadSettings();
-    updateUI();
-    createLevelButtons();
-    setupEventListeners();
-    enableAudio();
-}
-
-function createSkinBackground() {
-    skins.forEach(skin => {
-        const skinElement = document.createElement('div');
-        skinElement.className = 'skin-preview-bg';
-        skinElement.style.background = skin.color;
-        skinElement.innerHTML = `<div style="font-size:30px;">${skin.detail}</div>`;
-        skinsBackground.appendChild(skinElement);
-    });
-}
-
-function loadSettings() {
-    const savedLanguage = localStorage.getItem('language');
-    const savedDifficulty = localStorage.getItem('difficulty');
-    
-    if (savedLanguage) {
-        language = savedLanguage;
-        document.querySelector(`input[name="language"][value="${savedLanguage}"]`).checked = true;
-    }
-    
-    if (savedDifficulty) {
-        baseSpeed = parseInt(savedDifficulty);
-        document.querySelector(`input[name="difficulty"][value="${savedDifficulty}"]`).checked = true;
-    }
-}
-
-function updateUI() {
-    const t = translations[language];
-    
-    // Atualiza todos os textos da UI
-    startGameBtn.textContent = t.play;
-    skinShopBtn.textContent = t.skinShop;
-    settingsBtn.textContent = t.settings;
-    document.querySelector('.settings-title:first-child').textContent = t.difficulty;
-    document.querySelector('label[for="easy"]').textContent = t.easy;
-    document.querySelector('label[for="medium"]').textContent = t.medium;
-    document.querySelector('label[for="hard"]').textContent = t.hard;
-    document.querySelectorAll('.settings-title')[1].textContent = t.language;
-    saveSettingsBtn.textContent = t.save;
-    if (skinShop.querySelector('h3')) skinShop.querySelector('h3').textContent = t.chooseSkin;
-    highScoreDisplay.textContent = t.highScore + highScore;
-    gameOverDisplay.textContent = t.gameOver;
-    victoryDisplay.textContent = t.victory;
-    document.getElementById('footer').textContent = t.createdBy;
-    if (toggleSkinShopBtn) toggleSkinShopBtn.textContent = t.skinShop;
-    levelSelectScreen.querySelector('.title').textContent = t.chooseLevel;
-    backToMenuBtn.textContent = t.back;
-    pauseBtn.textContent = t.pause;
-    resumeBtn.textContent = t.resume;
-    quitBtn.textContent = t.quit;
-    if (pauseMenu.querySelector('h2')) pauseMenu.querySelector('h2').textContent = t.paused;
-}
-
-function createLevelButtons() {
-    levelsContainer.innerHTML = '';
-    for (let i = 1; i <= 10; i++) {
-        const levelBtn = document.createElement('button');
-        levelBtn.className = 'level-button';
-        levelBtn.textContent = `${translations[language].chooseLevel.split(' ')[0]} ${i}`;
-        
-        if (i < unlockedLevels) levelBtn.classList.add('completed');
-        if (i > unlockedLevels) levelBtn.disabled = true;
-        
-        levelBtn.addEventListener('click', () => {
-            selectedLevel = i;
-            startGame();
-        });
-        levelsContainer.appendChild(levelBtn);
-    }
-}
-
-function setupEventListeners() {
-    // Menu principal
-    startGameBtn.addEventListener('click', () => {
-        startScreen.style.display = 'none';
-        levelSelectScreen.style.display = 'flex';
-        backgroundMusic.play().catch(e => console.log("Audio error:", e));
-    });
-
-    backToMenuBtn.addEventListener('click', () => {
-        levelSelectScreen.style.display = 'none';
-        startScreen.style.display = 'flex';
-    });
-
-    // Configurações
-    settingsBtn.addEventListener('click', () => {
-        settingsMenu.style.display = 'block';
-    });
-
-    saveSettingsBtn.addEventListener('click', saveSettings);
-
-    // Pausa
-    pauseBtn.addEventListener('click', togglePause);
-    resumeBtn.addEventListener('click', togglePause);
-    quitBtn.addEventListener('click', quitToMenu);
-
-    // Controles mobile
-    leftBtn.addEventListener('touchstart', () => moveLeft = true);
-    leftBtn.addEventListener('touchend', () => moveLeft = false);
-    rightBtn.addEventListener('touchstart', () => moveRight = true);
-    rightBtn.addEventListener('touchend', () => moveRight = false);
-    jumpBtn.addEventListener('touchstart', jump);
-
-    // Teclado
-    document.addEventListener('keydown', handleKeyDown);
-    document.addEventListener('keyup', handleKeyUp);
-
-    // Skins
-    skinOptions.forEach(option => {
-        option.addEventListener('click', () => {
-            const selectedSkin = option.getAttribute('data-skin');
-            bobi.className = selectedSkin;
-            skinShop.style.display = 'none';
-            if (skinSkyColors[selectedSkin]) {
-                gameContainer.style.background = `linear-gradient(to top, ${skinSkyColors[selectedSkin]}, #e0f7fa)`;
-            }
-        });
-    });
-
-    if (toggleSkinShopBtn) {
-        toggleSkinShopBtn.addEventListener('click', () => {
-            skinShop.style.display = skinShop.style.display === 'none' ? 'block' : 'none';
-        });
-    }
-
-    // Prevenir rolagem em mobile
-    document.addEventListener('touchmove', preventScroll, { passive: false });
-}
-
-function enableAudio() {
-    document.body.addEventListener('click', () => {
-        document.querySelectorAll('audio').forEach(a => {
-            a.play().then(() => a.pause()).catch(() => {});
-        });
-    }, { once: true });
-}
-
-// ========== FUNÇÕES DO JOGO ==========
-function startGame() {
-    resetGameState();
-    levelSelectScreen.style.display = 'none';
-    gameContainer.style.display = 'block';
-    gameStarted = true;
-    isPaused = false;
-
-    // Configura dificuldade baseada no nível
-    if (selectedLevel <= 3) baseSpeed = 5;
-    else if (selectedLevel <= 7) baseSpeed = 7;
-    else baseSpeed = 9;
-    currentSpeed = baseSpeed;
-    levelTimeLimit = selectedLevel * 60;
-
-    // Inicia geradores de objetos
-    obstacleInterval = setInterval(createObstacle, 1500);
-    coinInterval = setInterval(createCoin, 3000);
-    cloudInterval = setInterval(createCloud, 5000);
-
-    // Primeiras nuvens
-    for (let i = 0; i < 3; i++) createCloud();
-
-    // Inicia loop do jogo
-    requestAnimationFrame(gameLoop);
-}
-
-function resetGameState() {
-    clearIntervals();
-    timer = 0;
-    score = 0;
-    levelComplete = false;
-    bobiBottom = groundHeight;
-    bobiLeft = 50;
-    velocityY = 0;
-    isJumping = false;
-    moveLeft = false;
-    moveRight = false;
-
-    // Limpa objetos do jogo
-    obstacles.forEach(obs => obs.remove());
-    coins.forEach(coin => coin.remove());
-    clouds.forEach(cloud => cloud.remove());
-    obstacles = [];
-    coins = [];
-    clouds = [];
-
-    // Reseta UI
-    timerDisplay.textContent = '0.00';
-    scoreDisplay.textContent = '0';
-    gameOverDisplay.style.display = 'none';
-    victoryDisplay.style.display = 'none';
-    bobi.style.animation = '';
-    bobi.style.left = `${bobiLeft}px`;
-    bobi.style.transform = 'translateY(0)';
-}
-
-function clearIntervals() {
-    clearInterval(obstacleInterval);
-    clearInterval(coinInterval);
-    clearInterval(cloudInterval);
-}
-
-function gameLoop() {
-    if (!gameStarted || isPaused) return;
-
-    // Atualiza timer e dificuldade
-    timer += 0.016;
-    timerDisplay.textContent = timer.toFixed(2);
-    currentSpeed = baseSpeed + Math.floor(timer / 10);
-
-    checkLevelCompletion();
-    updateBobiPosition();
-    moveGameElements();
-    checkCollisions();
-
-    requestAnimationFrame(gameLoop);
-}
-
-function updateBobiPosition() {
-    // Movimento vertical (pulo)
-    velocityY -= gravity;
-    bobiBottom += velocityY;
-    
-    if (bobiBottom <= groundHeight) {
-        bobiBottom = groundHeight;
-        isJumping = false;
-        velocityY = 0;
-    }
-    bobi.style.transform = `translateY(${-bobiBottom + groundHeight}px)`;
-    
-    // Movimento horizontal
-    if (moveLeft && bobiLeft > 0) bobiLeft -= currentSpeed;
-    if (moveRight && bobiLeft < window.innerWidth - 50) bobiLeft += currentSpeed;
-    bobi.style.left = `${bobiLeft}px`;
-}
-
-function moveGameElements() {
-    // Obstáculos
-    obstacles.forEach((obs, index) => {
-        let obsLeft = parseFloat(obs.style.left) - currentSpeed;
-        obs.style.left = `${obsLeft}px`;
-        
-        if (obsLeft < -40) {
-            obs.remove();
-            obstacles.splice(index, 1);
-            score++;
-            scoreDisplay.textContent = score;
-        }
-    });
-
-    // Moedas
-    coins.forEach((coin, index) => {
-        let coinLeft = parseFloat(coin.style.left) - currentSpeed;
-        coin.style.left = `${coinLeft}px`;
-        
-        if (coinLeft < -20) {
-            coin.remove();
-            coins.splice(index, 1);
-        }
-    });
-
-    // Nuvens
-    clouds.forEach((cloud, index) => {
-        let cloudLeft = parseFloat(cloud.style.left) - currentSpeed * 0.5;
-        cloud.style.left = `${cloudLeft}px`;
-        
-        if (cloudLeft < -200) {
-            cloud.remove();
-            clouds.splice(index, 1);
-        }
-    });
-}
-
-function checkCollisions() {
-    const bobiRect = bobi.getBoundingClientRect();
-
-    // Verifica colisão com obstáculos
-    obstacles.forEach(obs => {
-        const obsRect = obs.getBoundingClientRect();
-        if (isColliding(bobiRect, obsRect)) {
-            handleCollision();
-            return;
-        }
-    });
-
-    // Verifica coleta de moedas
-    coins.forEach((coin, index) => {
-        const coinRect = coin.getBoundingClientRect();
-        if (isColliding(bobiRect, coinRect)) {
-            coin.remove();
-            coins.splice(index, 1);
-            score += coin.classList.contains('power-coin') ? 20 : 5;
-            scoreDisplay.textContent = score;
-            
-            if (coin.classList.contains('power-coin')) {
-                activatePower(coin.dataset.type);
-            }
-        }
-    });
-}
-
-function isColliding(rect1, rect2) {
-    return !(
-        rect1.right < rect2.left || 
-        rect1.left > rect2.right || 
-        rect1.bottom < rect2.top || 
-        rect1.top > rect2.bottom
-    );
-}
-
-function handleCollision() {
-    playSound('crash-sound');
-    bobi.style.animation = "blink 0.5s 3";
-    setTimeout(gameOver, 500);
-}
-
-function checkLevelCompletion() {
-    if (timer >= levelTimeLimit && !levelComplete) {
-        levelComplete = true;
-        victory();
-    }
-}
-
-// ========== FUNÇÕES DE CONTROLE ==========
-function jump() {
-    if (!isJumping && gameStarted && !isPaused) {
-        isJumping = true;
-        velocityY = 15;
-        playSound('jump-sound');
-    }
-}
-
-function togglePause() {
-    isPaused = !isPaused;
-    pauseMenu.style.display = isPaused ? 'block' : 'none';
-    pauseBtn.textContent = isPaused ? translations[language].resume : translations[language].pause;
-    
-    if (isPaused) {
-        clearIntervals();
+  };
+  
+  const t = translations[lang] || translations['pt'];
+  
+  // Atualizar elementos da página
+  if (document.querySelector('title')) document.querySelector('title').textContent = t.title;
+  if (document.querySelector('header h1')) document.querySelector('header h1').textContent = `🎮 ${t.title}`;
+  if (document.querySelector('header p')) document.querySelector('header p').textContent = t.subtitle;
+  if (document.querySelector('footer p')) document.querySelector('footer p').textContent = t.footer;
+  
+  // Atualizar textos dos links de navegação
+  const navLinks = document.querySelectorAll('.nav-link');
+  if (navLinks.length > 0) {
+    navLinks[0].textContent = t.news;
+    navLinks[1].textContent = t.games;
+    navLinks[2].textContent = t.earnMoney;
+    navLinks[3].textContent = t.chatotaku;
+    navLinks[4].textContent = t.about;
+    navLinks[5].textContent = t.support;
+  }
+  
+  // Atualizar textos de seção
+  const sectionTitles = document.querySelectorAll('.section-title');
+  if (sectionTitles.length > 0) {
+    sectionTitles[0].textContent = t.news;
+    if (sectionTitles[1]) sectionTitles[1].textContent = t.games;
+    if (sectionTitles[2]) sectionTitles[2].textContent = t.earnMoney;
+    if (sectionTitles[3]) sectionTitles[3].textContent = t.chatotaku;
+    if (sectionTitles[4]) sectionTitles[4].textContent = t.about;
+    if (sectionTitles[5]) sectionTitles[5].textContent = t.support;
+  }
+  
+  // Atualizar mensagens de "sem conteúdo"
+  document.querySelectorAll('.no-posts').forEach(el => {
+    if (el.id === 'postagens' || el.classList.contains('no-posts')) {
+      el.textContent = t.noPosts;
+    } else if (el.id === 'jogos-container') {
+      el.textContent = t.noGames;
     } else {
-        obstacleInterval = setInterval(createObstacle, 1500);
-        coinInterval = setInterval(createCoin, 3000);
-        cloudInterval = setInterval(createCloud, 5000);
-        requestAnimationFrame(gameLoop);
+      el.textContent = t.noCategoryGames;
     }
+  });
+  
+  // Atualizar botões e placeholders
+  document.querySelectorAll('.btn-jogar, .play-overlay-btn').forEach(el => {
+    el.textContent = t.playNow;
+  });
+  
+  document.querySelectorAll('.comment-input').forEach(el => {
+    el.placeholder = t.commentPlaceholder;
+  });
+  
+  document.querySelectorAll('.post-comment-btn').forEach(el => {
+    el.textContent = t.publishComment;
+  });
 }
 
-function quitToMenu() {
-    togglePause();
-    gameOver();
+function getUserId() {
+  let userId = localStorage.getItem('bobGamesUserId');
+  if (!userId) {
+    userId = 'user_' + Math.random().toString(36).substr(2, 9);
+    localStorage.setItem('bobGamesUserId', userId);
+  }
+  return userId;
 }
 
-function handleKeyDown(e) {
-    switch(e.key) {
-        case 'ArrowUp': case ' ':
-            if (gameStarted && !isPaused) jump();
-            else if (startScreen.style.display !== 'none') startGameBtn.click();
-            break;
-        case 'ArrowLeft': case 'a': moveLeft = true; break;
-        case 'ArrowRight': case 'd': moveRight = true; break;
-        case 'Escape': if (gameStarted) togglePause(); break;
-    }
-}
-
-function handleKeyUp(e) {
-    switch(e.key) {
-        case 'ArrowLeft': case 'a': moveLeft = false; break;
-        case 'ArrowRight': case 'd': moveRight = false; break;
-    }
-}
-
-function preventScroll(e) {
-    if (gameStarted) e.preventDefault();
-}
-
-// ========== FUNÇÕES DE OBJETOS DO JOGO ==========
-function createObstacle() {
-    if (!gameStarted || isPaused) return;
-    
-    const obs = document.createElement('div');
-    obs.className = 'obstacle';
-    obs.style.left = `${window.innerWidth}px`;
-    obs.style.bottom = `${groundHeight}px`;
-    gameContainer.appendChild(obs);
-    obstacles.push(obs);
-}
-
-function createCoin() {
-    if (!gameStarted || isPaused) return;
-    
-    const coin = document.createElement('div');
-    coin.className = 'coin';
-    coin.style.left = `${window.innerWidth}px`;
-    coin.style.bottom = `${Math.random() * 100 + 100}px`;
-    gameContainer.appendChild(coin);
-    coins.push(coin);
-    
-    // 10% chance de ser moeda de poder
-    if (Math.random() < 0.1) {
-        const types = ['fly', 'spin', 'giant'];
-        const type = types[Math.floor(Math.random() * types.length)];
-        coin.classList.add('power-coin');
-        coin.dataset.type = type;
-    }
-}
-
-function createCloud() {
-    if (!gameStarted || isPaused) return;
-    
-    const cloud = document.createElement('div');
-    cloud.className = 'cloud';
-    const size = Math.random() * 50 + 30;
-    cloud.style.width = `${size}px`;
-    cloud.style.height = `${size * 0.6}px`;
-    cloud.style.top = `${Math.random() * 50 + 10}%`;
-    cloud.style.left = `${window.innerWidth}px`;
-    gameContainer.appendChild(cloud);
-    clouds.push(cloud);
-}
-
-function activatePower(type) {
-    const powerClass = `bobi-${type}`;
-    bobi.classList.add(powerClass);
-    
-    setTimeout(() => {
-        bobi.classList.remove(powerClass);
-    }, 6000);
-}
-
-// ========== FUNÇÕES DE FIM DE JOGO ==========
-function gameOver() {
-    gameStarted = false;
-    clearIntervals();
-    
-    // Atualiza recorde
-    if (score > highScore) {
-        highScore = score;
-        localStorage.setItem('highScore', highScore);
-        highScoreDisplay.textContent = translations[language].highScore + highScore;
-    }
-    
-    gameOverDisplay.style.display = 'block';
-    setTimeout(() => {
-        startScreen.style.display = 'flex';
-        gameContainer.style.display = 'none';
-    }, 2000);
-}
-
-function victory() {
-    gameStarted = false;
-    clearIntervals();
-    
-    // Atualiza recorde
-    if (score > highScore) {
-        highScore = score;
-        localStorage.setItem('highScore', highScore);
-        highScoreDisplay.textContent = translations[language].highScore + highScore;
-    }
-    
-    // Desbloqueia próximo nível
-    if (selectedLevel >= unlockedLevels) {
-        unlockedLevels = selectedLevel + 1;
-        localStorage.setItem('unlockedLevels', unlockedLevels);
-    }
-    
-    victoryDisplay.style.display = 'block';
-    setTimeout(() => {
-        levelSelectScreen.style.display = 'flex';
-        gameContainer.style.display = 'none';
-        createLevelButtons();
-    }, 2000);
-}
-
-// ========== FUNÇÕES UTILITÁRIAS ==========
-function playSound(id) {
-    if (!soundEffectsEnabled) return;
-    const sound = document.getElementById(id);
-    sound.currentTime = 0;
-    sound.play().catch(e => console.log("Audio error:", e));
-}
-
-function saveSettings() {
-    const difficulty = document.querySelector('input[name="difficulty"]:checked').value;
-    language = document.querySelector('input[name="language"]:checked').value;
-    
-    baseSpeed = parseInt(difficulty);
-    localStorage.setItem('difficulty', difficulty);
-    localStorage.setItem('language', language);
-    
-    settingsMenu.style.display = 'none';
-    updateUI();
-}
-
-// ========== INICIAR JOGO ==========
-initGame();
+// Atualiza quando houver mudanças no localStorage
+window.addEventListener('storage', () => {
+  posts = JSON.parse(localStorage.getItem('posts')) || [];
+  games = JSON.parse(localStorage.getItem('games')) || [];
+  aboutContent = JSON.parse(localStorage.getItem('aboutContent')) || {pt: "", en: "", fr: "", ja: ""};
+  userLikes = JSON.parse(localStorage.getItem('userLikes')) || {};
+  carregarPosts();
+  carregarJogos();
+  carregarSobre();
+});

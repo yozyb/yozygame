@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8">
+  <title>Painel do Administrador - Bob Games</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+  <header>
+    <h1>🔒 Painel do Administrador</h1>
+    <p>Gerenciamento de Conteúdo - Bob Games</p>
+  </header>
+
+  <main>
+    <section class="admin-section">
+      <h2>📝 Nova Publicação</h2>
+      <form id="formPublicar" onsubmit="publicarPost(event)">
+        <div class="form-group">
+          <label for="titulo">Título*</label>
+          <input type="text" id="titulo" required>
+        </div>
+        
+        <div class="form-group">
+          <label for="imagem">URL da Imagem</label>
+          <input type="text" id="imagem">
+          <small>Cole o link completo da imagem (ex: https://exemplo.com/imagem.jpg)</small>
+        </div>
+        
+        <div class="form-group">
+          <label for="video">URL do Vídeo (Embed)</label>
+          <input type="text" id="video">
+          <small>Cole o link embed do vídeo (ex: https://youtube.com/embed/...)</small>
+        </div>
+        
+        <div class="form-group">
+          <label for="link">Link do Jogo/Conteúdo*</label>
+          <input type="url" id="link" required>
+        </div>
+        
+        <div class="form-group">
+          <label for="descricao">Descrição</label>
+          <textarea id="descricao"></textarea>
+        </div>
+        
+        <button type="submit">Publicar</button>
+      </form>
+    </section>
+
+    <section class="admin-section">
+      <h2>🎮 Publicar Novo Jogo</h2>
+      <form id="formPublicarJogo" onsubmit="publicarJogo(event)">
+        <div class="form-group">
+          <label for="jogo-titulo">Título*</label>
+          <input type="text" id="jogo-titulo" required>
+        </div>
+        
+        <div class="form-group">
+          <label for="jogo-imagem">URL da Imagem*</label>
+          <input type="text" id="jogo-imagem" required>
+          <small>Cole o link completo da imagem (ex: https://exemplo.com/imagem.jpg)</small>
+        </div>
+        
+        <div class="form-group">
+          <label for="jogo-link">Link do Jogo*</label>
+          <input type="url" id="jogo-link" required>
+        </div>
+        
+        <div class="form-group">
+          <label for="jogo-descricao">Descrição*</label>
+          <textarea id="jogo-descricao" required></textarea>
+        </div>
+        
+        <div class="form-group">
+          <label for="jogo-categoria">Categoria*</label>
+          <select id="jogo-categoria" required>
+            <option value="all">Todos</option>
+            <option value="earn-money">💰 Earn Money</option>
+            <option value="chatotaku">🐱 ChaTOTaku</option>
+            <option value="action">🎯 Ação</option>
+            <option value="adventure">🧭 Aventura</option>
+          </select>
+        </div>
+        
+        <button type="submit">Publicar Jogo</button>
+      </form>
+    </section>
+
+    <section class="admin-section">
+      <h2>ℹ️ Sobre Nós</h2>
+      <form id="formSobre" onsubmit="atualizarSobre(event)">
+        <div class="form-group">
+          <label for="sobre-pt">Conteúdo em Português*</label>
+          <textarea id="sobre-pt" required></textarea>
+        </div>
+        <div class="form-group">
+          <label for="sobre-en">Conteúdo em Inglês</label>
+          <textarea id="sobre-en"></textarea>
+        </div>
+        <div class="form-group">
+          <label for="sobre-fr">Conteúdo em Francês</label>
+          <textarea id="sobre-fr"></textarea>
+        </div>
+        <div class="form-group">
+          <label for="sobre-ja">Conteúdo em Japonês</label>
+          <textarea id="sobre-ja"></textarea>
+        </div>
+        <button type="submit">Atualizar Conteúdo</button>
+      </form>
+    </section>
+
+    <section class="admin-section">
+      <h2>❌ Remover Publicação</h2>
+      <form id="formRemover" onsubmit="removerPost(event)">
+        <div class="form-group">
+          <label for="tituloRemover">Título da Publicação*</label>
+          <input type="text" id="tituloRemover" required>
+          <small>Digite exatamente como aparece na publicação</small>
+        </div>
+        <button type="submit" class="btn-remover">🗑️ Remover Publicação</button>
+      </form>
+    </section>
+
+    <section class="admin-section">
+      <h2>📰 Publicações Ativas</h2>
+      <div id="listaPosts"></div>
+    </section>
+
+    <section class="admin-section">
+      <h2>🎮 Jogos Publicados</h2>
+      <div id="listaJogos"></div>
+    </section>
+
+    <section class="admin-section">
+      <h2>📩 Mensagens de Suporte</h2>
+      <div id="listaSupportMessages"></div>
+    </section>
+  </main>
+
+  <script src="painel.js"></script>
+</body>
+</html>
